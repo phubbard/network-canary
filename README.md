@@ -62,17 +62,42 @@ A network status monitor for Raspberry Pi (I used a [4b with 4GB](https://www.wa
 
 ## Usage
 
-### Basic usage (60-second updates):
+### Running Automatically on Boot (Recommended)
+
+Install as a systemd service to start automatically when the Pi boots:
+
+```bash
+./install-service.sh
+```
+
+This will:
+- Install the service to run on boot
+- Start the service immediately
+- Show useful management commands
+
+**Service Management Commands:**
+```bash
+sudo systemctl status network-canary   # Check service status
+sudo systemctl stop network-canary     # Stop the service
+sudo systemctl start network-canary    # Start the service
+sudo systemctl restart network-canary  # Restart the service
+sudo journalctl -u network-canary -f   # View logs (live)
+sudo systemctl disable network-canary  # Disable auto-start on boot
+```
+
+### Manual Usage (for testing)
+
+**Basic usage (60-second updates):**
 ```bash
 ./network_status.py
 ```
 
-### Custom update interval (e.g., 30 seconds):
+**Custom update interval (e.g., 30 seconds):**
 ```bash
 ./network_status.py 30
 ```
 
-### Stop the monitor:
+**Stop the monitor:**
 Press `Ctrl+C` - the script will cleanly shut down and put the display to sleep.
 
 ## Display Layout
