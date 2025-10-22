@@ -37,12 +37,14 @@ class NetworkStatusDisplay:
         # Load fonts (increased sizes for better readability)
         try:
             self.font_title = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 40)
+            self.font_statusbar = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 48)
             self.font_large = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 32)
             self.font_normal = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 26)
             self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20)
         except:
             # Fallback to default font if Font.ttc not available
             self.font_title = ImageFont.load_default()
+            self.font_statusbar = ImageFont.load_default()
             self.font_large = ImageFont.load_default()
             self.font_normal = ImageFont.load_default()
             self.font_small = ImageFont.load_default()
@@ -184,24 +186,22 @@ class NetworkStatusDisplay:
             if not passed:
                 all_passed = False
 
-        # Draw large status bar at bottom
-        bar_height = 60
+        # Draw large status bar at bottom - red background with yellow text
+        bar_height = 80
         bar_y = self.height - bar_height
-        bar_color = self.epd.BLACK if all_passed else self.epd.RED
 
-        draw.rectangle([(0, bar_y), (self.width, self.height)], fill=bar_color)
+        draw.rectangle([(0, bar_y), (self.width, self.height)], fill=self.epd.RED)
 
-        # Draw status text on bar
+        # Draw status text on bar with yellow text for high visibility
         status_text = "ALL SYSTEMS OK" if all_passed else "NETWORK ISSUES DETECTED"
-        text_color = self.epd.WHITE if all_passed else self.epd.YELLOW
 
         # Center the text
-        bbox = draw.textbbox((0, 0), status_text, font=self.font_large)
+        bbox = draw.textbbox((0, 0), status_text, font=self.font_statusbar)
         text_width = bbox[2] - bbox[0]
         text_x = (self.width - text_width) // 2
 
-        draw.text((text_x, bar_y + 18), status_text,
-                 font=self.font_large, fill=text_color)
+        draw.text((text_x, bar_y + 16), status_text,
+                 font=self.font_statusbar, fill=self.epd.YELLOW)
 
         # Display on e-Paper
         logger.info("Updating display...")
