@@ -2,6 +2,7 @@
 
 A network status monitor for Raspberry Pi with Waveshare 3.97" color e-Paper display (800x480). Displays real-time network connectivity status with intelligent display updates to preserve e-ink lifespan.
 
+![picture of unit](canary.jpg)
 ## Features
 
 - **Comprehensive Network Testing**
