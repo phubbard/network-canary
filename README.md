@@ -1,6 +1,6 @@
 # Network Canary
 
-A network status monitor for Raspberry Pi with Waveshare 3.97" color e-Paper display (800x480). Displays real-time network connectivity status with intelligent display updates to preserve e-ink lifespan.
+A network status monitor for Raspberry Pi (I used a [4b with 4GB](https://www.waveshare.com/raspberry-pi-4-model-b-4gb-ram.htm), total overkill) with [Waveshare 3.97" color e-Paper display (800x480)](https://www.waveshare.com/3.97inch-e-paper-hat-plus-g.htm?sku=31062). Displays real-time network connectivity status with intelligent display updates to preserve e-ink lifespan.
 
 ![picture of unit](canary.jpeg)
 ## Features
