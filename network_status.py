@@ -155,6 +155,32 @@ class NetworkStatusDisplay:
             logger.error(f"Error with HTTPS check to {url}: {e}")
             return False, "Error"
 
+    def check_https_no_verify(self, url: str = "https://wifi.phfactor.net/") -> Tuple[bool, str]:
+        """Check HTTPS connection ignoring SSL certificate warnings (for self-signed certs)"""
+        try:
+            # Create an SSL context that doesn't verify certificates
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+
+            # Create a request with a timeout
+            req = urllib.request.Request(url, headers={'User-Agent': 'NetworkCanary/1.0'})
+            with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
+                status = response.getcode()
+                if status == 200:
+                    return True, f"HTTP {status}"
+                else:
+                    return True, f"HTTP {status}"
+        except urllib.error.HTTPError as e:
+            # Got a response but with an error code - connection works but server returned error
+            return True, f"HTTP {e.code}"
+        except urllib.error.URLError as e:
+            logger.error(f"Error connecting to {url}: {e}")
+            return False, "Connection failed"
+        except Exception as e:
+            logger.error(f"Error with HTTPS check to {url}: {e}")
+            return False, "Error"
+
     def run_all_checks(self) -> dict:
         """Run all network checks and return results"""
         logger.info("Running network checks...")
@@ -166,7 +192,8 @@ class NetworkStatusDisplay:
             "Gateway": self.check_gateway(),
             "Internet IP (8.8.8.8)": self.check_internet_ip("8.8.8.8"),
             "Internet DNS (amazon.com)": self.check_internet_hostname("amazon.com"),
-            "HTTPS (www.phfactor.net)": self.check_https_connection("https://www.phfactor.net")
+            "HTTPS (www.phfactor.net)": self.check_https_connection("https://www.phfactor.net"),
+            "HTTPS (wifi.phfactor.net)": self.check_https_no_verify("https://wifi.phfactor.net/")
         }
 
         return checks
