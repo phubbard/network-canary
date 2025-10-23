@@ -11,6 +11,8 @@ import time
 import socket
 import subprocess
 from typing import Tuple
+import urllib.request
+import ssl
 
 # Add the waveshare library path
 epaper_path = "/home/pfh/code/3in97_e-Paper_G/RaspberryPi_JetsonNano/python"
@@ -132,6 +134,27 @@ class NetworkStatusDisplay:
             logger.error(f"Error resolving {hostname}: {e}")
             return False, "Failed"
 
+    def check_https_connection(self, url: str = "https://www.phfactor.net") -> Tuple[bool, str]:
+        """Check if we can make an HTTPS connection to a webserver"""
+        try:
+            # Create a request with a timeout
+            req = urllib.request.Request(url, headers={'User-Agent': 'NetworkCanary/1.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                status = response.getcode()
+                if status == 200:
+                    return True, f"HTTP {status}"
+                else:
+                    return True, f"HTTP {status}"
+        except urllib.error.HTTPError as e:
+            # Got a response but with an error code - connection works but server returned error
+            return True, f"HTTP {e.code}"
+        except urllib.error.URLError as e:
+            logger.error(f"Error connecting to {url}: {e}")
+            return False, "Connection failed"
+        except Exception as e:
+            logger.error(f"Error with HTTPS check to {url}: {e}")
+            return False, "Error"
+
     def run_all_checks(self) -> dict:
         """Run all network checks and return results"""
         logger.info("Running network checks...")
@@ -142,7 +165,8 @@ class NetworkStatusDisplay:
             "Local Hostname": self.check_hostname_resolution("fratboy.phfactor.net"),
             "Gateway": self.check_gateway(),
             "Internet IP (8.8.8.8)": self.check_internet_ip("8.8.8.8"),
-            "Internet DNS (amazon.com)": self.check_internet_hostname("amazon.com")
+            "Internet DNS (amazon.com)": self.check_internet_hostname("amazon.com"),
+            "HTTPS (www.phfactor.net)": self.check_https_connection("https://www.phfactor.net")
         }
 
         return checks
