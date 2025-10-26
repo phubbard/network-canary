@@ -13,6 +13,9 @@ import subprocess
 from typing import Tuple
 import urllib.request
 import ssl
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import io
 
 # Add the waveshare library path
 epaper_path = "/home/pfh/code/3in97_e-Paper_G/RaspberryPi_JetsonNano/python"
@@ -29,7 +32,96 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+class StatusHTTPRequestHandler(BaseHTTPRequestHandler):
+    """HTTP request handler to serve the network status display as PNG"""
+
+    def log_message(self, format, *args):
+        """Override to use our logger instead of stderr"""
+        logger.info(f"Web request: {format % args}")
+
+    def do_GET(self):
+        """Handle GET requests"""
+        if self.path == '/' or self.path == '/index.html':
+            # Serve HTML page with embedded PNG
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+
+            html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Canary Status</title>
+    <meta http-equiv="refresh" content="30">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #2c2c2c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Network Canary Status Monitor</h1>
+    <div class="container">
+        <img src="/status.png" alt="Network Status Display">
+    </div>
+</body>
+</html>"""
+            self.wfile.write(html.encode())
+
+        elif self.path == '/status.png':
+            # Serve the current status image as PNG
+            # Access the class through globals since we can't import ourselves
+            display_class = globals()['NetworkStatusDisplay']
+
+            with display_class.current_image_lock:
+                if display_class.current_image is not None:
+                    # Convert PIL Image to PNG bytes
+                    img_io = io.BytesIO()
+                    display_class.current_image.save(img_io, 'PNG')
+                    img_io.seek(0)
+
+                    self.send_response(200)
+                    self.send_header('Content-type', 'image/png')
+                    self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                    self.end_headers()
+                    self.wfile.write(img_io.read())
+                else:
+                    self.send_response(503)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(b'Status display not yet available')
+        else:
+            self.send_response(404)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'Not Found')
+
+
 class NetworkStatusDisplay:
+    # Class variable to store the current display image for web serving
+    current_image = None
+    current_image_lock = threading.Lock()
+
     def __init__(self):
         """Initialize the e-Paper display"""
         self.epd = epd3in97g.EPD()
@@ -254,6 +346,10 @@ class NetworkStatusDisplay:
         draw.text((text_x, bar_y + 16), status_text,
                  font=self.font_statusbar, fill=self.epd.YELLOW)
 
+        # Save image for web serving
+        with NetworkStatusDisplay.current_image_lock:
+            NetworkStatusDisplay.current_image = image.copy()
+
         # Display on e-Paper
         logger.info("Updating display...")
         self.epd.display(self.epd.getbuffer(image))
@@ -337,7 +433,26 @@ class NetworkStatusDisplay:
             logger.error(f"Error during cleanup: {e}")
 
 
+def start_webserver(port=8080):
+    """Start the web server in a separate thread"""
+    def run_server():
+        try:
+            server = HTTPServer(('0.0.0.0', port), StatusHTTPRequestHandler)
+            logger.info(f"Web server started on port {port}")
+            logger.info(f"Access the status display at http://<your-pi-ip>:{port}/")
+            server.serve_forever()
+        except Exception as e:
+            logger.error(f"Error starting web server: {e}")
+
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+    return server_thread
+
+
 if __name__ == "__main__":
+    # Start web server
+    start_webserver(port=8080)
+
     display = NetworkStatusDisplay()
 
     # Get update interval from command line or use default 60 seconds (1 minute)

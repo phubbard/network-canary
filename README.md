@@ -62,6 +62,21 @@ A network status monitor for Raspberry Pi (I used a [4b with 4GB](https://www.wa
 
 ## Usage
 
+### Web Interface
+
+The Network Canary automatically starts a web server on port 8080 that displays the same status screen as the e-ink display. This allows you to check network status from any device on your network.
+
+**Access the web interface:**
+```
+http://<your-pi-ip-address>:8080/
+```
+
+Features:
+- Displays the exact same image as the e-ink screen
+- Auto-refreshes every 30 seconds
+- Lightweight - just a PNG served over HTTP
+- No additional configuration needed
+
 ### Running Automatically on Boot (Recommended)
 
 Install as a systemd service to start automatically when the Pi boots:
@@ -73,6 +88,7 @@ Install as a systemd service to start automatically when the Pi boots:
 This will:
 - Install the service to run on boot
 - Start the service immediately
+- Start the web server on port 8080
 - Show useful management commands
 
 **Service Management Commands:**
